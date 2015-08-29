@@ -9,7 +9,7 @@ EtherEncLib
 - NO MORE string buffers consuming Arduino RAM!
 
 August 2015
-- Add ESP8266 support
+- Add ESP8266 support by reaper7
 
 June 2015 - Branch newMods
 - Implemented UDP Stack for Homeseer integration (already working at Normal Mode)
