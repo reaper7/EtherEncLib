@@ -10,6 +10,7 @@ EtherEncLib
 
 August 2015
 - Add ESP8266 support by reaper7
+- Add ENERGIA (at this moment only MSP430G2553 tested) support by reaper7
 
 June 2015 - Branch newMods
 - Implemented UDP Stack for Homeseer integration (already working at Normal Mode)
