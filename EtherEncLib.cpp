@@ -63,9 +63,9 @@
 
 #include <Arduino.h>
 #include "EtherEncLib.h"
+#if (!ESP8266) && (!ENERGIA)
 #include <avr/pgmspace.h>
-
-
+#endif
 
 // --------------------------------------------------------------------------------------------------------------------------------------------
 //
@@ -88,7 +88,7 @@ void EtherEncLib::begin(unsigned char *ip, unsigned char *mac)
 unsigned char EtherEncLib::available(void)
 {
 	if (m_stack.established() && !m_stack.closing())
-	{
+	{	
 		isGet = 0;
 		isPost = 0;
 		isIndexHtml = 0;
@@ -158,9 +158,11 @@ void EtherEncLib::print(char *respondType, unsigned char dataLen)
 	  memcpy_P(respond,respondType+i,1);
 	  print(respond[0]);
 	}
+#if (!ESP8266) && (!ENERGIA)
 	if (DEBUGLIB) Serial.println();
 	if (DEBUGLIB) { Serial.print(F("FreeRAM: ")); Serial.print(freeRam()); }
 	if (DEBUGLIB) Serial.println();
+#endif
 }
 
 // Close method
@@ -169,7 +171,9 @@ void EtherEncLib::close(void)
 {
     m_stack.close();
     for (unsigned i = 0; i < BUFFER_PARAMS_LEN; i++)  m_httpData[i] = 0;
+#if (!ESP8266) && (!ENERGIA)
     if (DEBUGLIB) { Serial.print(F("FreeRAM: ")); Serial.print(freeRam()); }
+#endif
 }
 
 char EtherEncLib::read(void)
@@ -199,9 +203,15 @@ char *EtherEncLib::getParams(void)
 unsigned char EtherEncLib::analize(void)
 {
 	char c = m_stack.read();
+#if (!ESP8266)
 	char *p1 = "GET /";
 	char *p2 = "POST /";
 	char method = -1;
+#else
+	const char *p1 = "GET /";
+	const char *p2 = "POST /";
+	int method = -1;
+#endif
 	//char tmpData[BUFFER_PARAMS_LEN]; -- not needed, using m_httpData instead (by Renato Aloi, May 2015)
 	char countEnter = 0;
 	int  j = -1;
@@ -210,9 +220,12 @@ unsigned char EtherEncLib::analize(void)
 //	char *resposta;
 
 	for (unsigned i = 0; i < BUFFER_PARAMS_LEN; i++)  m_httpData[i] = 0;
-
+	
 	while(c != -1)
 	{
+#if (ESP8266)
+    yield();
+#endif
 		//if (DEBUGLIB) Serial.print(c);
 		if (method == -1)
 		{
@@ -353,6 +366,7 @@ unsigned char EtherEncLib::analize(void)
 		}
 		c = m_stack.read();
 	}
+
 	if (DEBUGLIB) Serial.println();
 
 	if ( j == -1 ) {
@@ -363,7 +377,3 @@ unsigned char EtherEncLib::analize(void)
 	
 	return 1;
 }
-
-
-
-

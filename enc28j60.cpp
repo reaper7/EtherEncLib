@@ -224,6 +224,27 @@ void MACEnableRecv(void)
 }
 
 /******************************************************************************
+ * Function:        void MACDisableRecv(void)
+ *
+ * PreCondition:    none
+ *
+ * Input:           none
+ *
+ * Output:          None
+ *
+ * Side Effects:    none
+ *
+ * Overview:        Disable ENC28J60 hardware receiving status
+ *
+ * Note:            NewMods - AUG 2015 - New func to disable Recv by Renato Aloi
+ *****************************************************************************/
+void MACDisableRecv(void)
+{
+    
+    enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);
+}
+
+/******************************************************************************
  * Function:        void MACInitMacAddr(unsigned char *_macadd)
  *
  * PreCondition:    none
@@ -1003,6 +1024,9 @@ static void enc28j60WriteBuffer(uint16_t len, uint8_t* data)
  *****************************************************************************/
 static uint8_t enc28j60ReadOp(uint8_t op, uint8_t address)
 {
+#if (ESP8266) || (ENERGIA)
+    uint8_t SPDR;
+#endif
         CSACTIVE;
         // issue read command
 /*--- made by SKA ---        SPDR = op | (address & ADDR_MASK);
@@ -1011,13 +1035,21 @@ static uint8_t enc28j60ReadOp(uint8_t op, uint8_t address)
         // read data
 /*--- made by SKA ---        SPDR = 0x00;
         waitspi();*/
-	SPI.transfer(0x00);
+#if (ESP8266) || (ENERGIA)
+	SPDR = SPI.transfer(0x00);
+#else
+  SPI.transfer(0x00);
+#endif
         // do dummy read if needed (for mac and mii, see datasheet page 29)
         if(address & 0x80)
         {
 /*--- made by SKA ---            SPDR = 0x00;
             waitspi();*/
-	    SPI.transfer(0x00);
+#if (ESP8266) || (ENERGIA)
+	    SPDR = SPI.transfer(0x00);
+#else
+      SPI.transfer(0x00);
+#endif
         }
         // release CS
         CSPASSIVE;

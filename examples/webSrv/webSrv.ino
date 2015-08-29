@@ -6,7 +6,9 @@
 
 #include <SPI.h>
 #include <EtherEncLib.h>
+#if (!ESP8266) && (!ENERGIA)
 #include <avr/pgmspace.h>
+#endif
 
 static unsigned char ipaddr[] = { 192, 168, 0, 125 };
 static unsigned char macaddr[] = { 0x00, 0x11, 0x22, 0x44, 0x00, 0x25 };
@@ -17,7 +19,11 @@ const PROGMEM char resp200Txt[] = {"HTTP/1.0 200 OK\n\rContent-Type: text/html\n
 
 void setup() 
 {
-  pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#if (ESP8266)
+    pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#else
+    pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#endif
   Serial.begin(115200);
   eElib.begin(ipaddr,macaddr);
   Serial.println(F("------ program start -----------"));

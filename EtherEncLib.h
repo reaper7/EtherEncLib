@@ -46,12 +46,13 @@ class EtherEncLib
 	unsigned int m_port;
 	TcpStack m_stack;
 	char  m_httpData[BUFFER_PARAMS_LEN];
-
+#if (!ESP8266) && (!ENERGIA)
 	int freeRam () {
 	  extern int __heap_start, *__brkval;
 	  int v;
 	  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 	};
+#endif
 	unsigned char analize    (void); // by SKA
     
   public:

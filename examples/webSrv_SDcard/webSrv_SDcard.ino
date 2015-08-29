@@ -7,7 +7,9 @@
 #include <SPI.h>
 #include <SD.h>
 #include <EtherEncLib.h>
+#if (!ESP8266) && (!ENERGIA)
 #include <avr/pgmspace.h>
+#endif
 
 #define BUFF_SIZE 99
 #define HTML_ROOT "WWW/"
@@ -27,7 +29,11 @@ const PROGMEM char resp200Gif[] = {"HTTP/1.0 200 OK\n\rContent-Type: image/gif\n
 void setup() {
 byte i;
   for ( i=0 ; i<BUFF_SIZE ; i++ ) htmlBuff[i] = 0x00;
-  pinMode(10,OUTPUT);	//--- ?
+#if (ESP8266)
+    pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#else
+    pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#endif
   Serial.begin(115200);
   eElib.begin(ipaddr,macaddr);
   Serial.println("------ program start -----------");

@@ -20,8 +20,9 @@
 
 #include "enc28typedef.h"
 #include <stdint.h>
+#if (!ESP8266) && (!ENERGIA)
 #include <avr/io.h>
-
+#endif
 //--- made by SKA ---
 #include <SPI.h>
 
@@ -67,6 +68,7 @@ typedef union
 void 		MACInit(void);
 void 		MACOpen(void);
 void 		MACEnableRecv(void);
+void 		MACDisableRecv(void);
 void 		MACInitMacAddr(unsigned char *_macadd);
 unsigned char *MACGetMacAddr(void);
 unsigned char 	MACHardwareRevision(void);

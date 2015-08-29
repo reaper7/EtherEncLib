@@ -9,7 +9,9 @@
 
 #include <SPI.h>
 #include <EtherEncLib.h>
+#if (!ESP8266) && (!ENERGIA)
 #include <avr/pgmspace.h>
+#endif
 
 static unsigned char ipaddr[] = { 192, 168, 0, 125 };
 static unsigned char macaddr[] = { 0x00, 0x11, 0x22, 0x44, 0x00, 0x25 };
@@ -20,7 +22,11 @@ void setup()
 {
     Serial.begin(115200);
     
+#if (ESP8266)
+    pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#else
     pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#endif
 
     //
     // Starting the lib

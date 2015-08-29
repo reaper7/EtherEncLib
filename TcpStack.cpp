@@ -33,7 +33,6 @@ extern "C" {
 #include "checksum.h"
 }
 
-
 void TcpStack::handleStack(void)
 {
 	bool arp  = false;
@@ -126,128 +125,7 @@ void TcpStack::handleStack(void)
 						tmpPort = (((uint)m_tcpData[TCP_SRC_PORT_H_P]<<8) & 0xFF00)
 								| ((m_tcpData[TCP_SRC_PORT_L_P]) & 0x00FF);
 
-						if (synFlag)
-						{
-							if (DEBUG) Serial.print(F("Got SYN!"));
-
-							if (!isSession())
-							{
-								if (DEBUG) Serial.println(F("new session!"));
-								// new session
-								m_sessionPort = (uint)(((uint)(m_tcpData[TCP_SRC_PORT_H_P]<<8) & 0xFF00) | (m_tcpData[TCP_SRC_PORT_L_P] & 0x00FF));
-								m_seqNum.b[0] = m_tcpData[TCP_SEQ_P+3];
-								m_seqNum.b[1] = m_tcpData[TCP_SEQ_P+2];
-								m_seqNum.b[2] = m_tcpData[TCP_SEQ_P+1];
-								m_seqNum.b[3] = m_tcpData[TCP_SEQ_P+0];
-								m_ackNum.b[0] = m_tcpData[TCP_ACK_P+3];
-								m_ackNum.b[1] = m_tcpData[TCP_ACK_P+2];
-								m_ackNum.b[2] = m_tcpData[TCP_ACK_P+1];
-								m_ackNum.b[3] = m_tcpData[TCP_ACK_P+0];
-
-								if (DEBUG)
-								{
-									Serial.println();
-									Serial.print(F("m_sessionPort: "));
-									Serial.println(m_sessionPort, DEC);
-									Serial.print(F("m_seqNum: "));
-									Serial.println(m_seqNum.l, DEC);
-									Serial.print(F("m_ackNum: "));
-									Serial.println(m_ackNum.l, DEC);
-									Serial.println();
-								}
-
-								returnSyn();
-
-								if (DEBUGLT) { Serial.print(F("RAM avail: ")); Serial.println(freeRam()); }
-							}
-							else
-							{
-								// session running already
-								//sendFinToPorOutOfSession();
-							}
-
-							
-						}
-
-						if (ackFlag)
-						{
-							if (DEBUG) Serial.println(F("-------got ack!"));
-
-							if (isSession() && m_sessionPort == tmpPort)
-							{
-								// session exists!
-								if (!m_buffering && !m_responding)
-								{
-									if (DEBUG) Serial.println(F("syn revc!"));
-
-									// we are established,
-									// but buffering incomming data
-									m_buffering = true;
-									m_established = true;
-								}
-								else if (m_responding && !m_closing)
-								{
-									if (DEBUG) Serial.println(F("responding!"));
-								}
-								else if (m_closing)
-								{
-									if (DEBUG) Serial.println(F("error, send reset!"));
-								}
-							}
-
-						}
-
-						if (pshAckFlag)
-						{
-							if (isSession() && m_sessionPort == tmpPort)
-							{
-								// session exists and is buffering!
-								if (m_buffering)
-								{
-									if (DEBUG) Serial.println(F("buffering!"));
-
-									// REV 3
-									// DMA Zero-Copy to socket space
-
-									// Getting http data payload
-									m_recvPayload = ((((uint)m_tcpData[IP_TOTLEN_H_P]) << 8) & 0xFF00)
-										| (((uint)m_tcpData[IP_TOTLEN_L_P]) & 0x00FF);
-
-									// Getting source IP and MAC
-									for (unsigned i = 0; i < MAC_SIZE; i++)
-										m_clientMacAddr[i] = m_tcpData[ETH_SRC_MAC_P + i];
-									for (unsigned i = 0; i < IP_SIZE; i++)
-										m_clientIpAddr[i] = m_tcpData[IP_SRC_P + i];
-
-
-									if (DEBUG) { Serial.print(F("m_recvPayload: ")); Serial.println(m_recvPayload, DEC); }
-
-									// Copy packet from
-									// ENC28J60's RX buffer to socket RX buffer
-									// TODO: Manage sockets: 0 - socket 1; 1 - socket 2
-									DMACopy(RX, SOCKET_RX_START(0), m_recvPayload + ETH_BUFF_SIZE);
-									waitForDMACopy();
-
-									// Subtracting packet size from total = data size
-									// It is -40, not -54; because source is IP datagram
-									m_recvPayload -= (IP_HEADER_LEN_V + TCP_HEADER_LEN_PLAIN_V);
-
-									// Now we can discard packet freeing space from
-									// RXTX FIFO, because we already moved the data
-									// to Socket FIFO, far away from being overwriten
-									if (DEBUG) Serial.println(F("buffering done!"));
-
-									// respond ack for push at once
-									// to avoid server become anoying
-									returnPush();
-
-									// now we are ready
-									m_buffering = false;
-									m_responding = true;
-								}
-							}
-						}
-
+						
 						if (finFlag)
 						{
 							if (isSession() && m_sessionPort == tmpPort)
@@ -278,6 +156,198 @@ void TcpStack::handleStack(void)
 								}
 							}
 						}
+
+						else if (ackFlag)
+						{
+							if (DEBUG) Serial.println(F("-------got ack!"));
+
+							if (isSession() && m_sessionPort == tmpPort)
+							{
+								// session exists!
+								if (!m_buffering && !m_responding)
+								{
+									if (DEBUG) Serial.println(F("syn revc!"));
+
+									// we are established,
+									// but buffering incomming data
+									m_buffering = true;
+									m_established = true;
+								}
+								else if (m_responding && !m_closing)
+								{
+									if (DEBUG) Serial.println(F("responding!"));
+								}
+								else if (m_closing)
+								{
+									//if (DEBUG) Serial.println(F("error, send reset!"));
+									// NewMods - AUG 2015 - It is not error, they are ACK arriving late.
+									// NewMods - AUG 2015 - NOPE! It is not that. Is is about packets collision (restarting hardware for now)
+									// m_sendData[TCP_ACK_P+0]
+									unsigned long actualAck = ((ulong)m_tcpData[TCP_ACK_P+0] << 24) 
+									    		| ((ulong)m_tcpData[TCP_ACK_P+1] << 16)
+									    		| ((ulong)m_tcpData[TCP_ACK_P+2] << 8) 
+									    		| ((ulong)m_tcpData[TCP_ACK_P+3]);
+
+									if (DEBUGLT) Serial.print(F("Late ACK: 0x"));  
+									if (DEBUGLT) Serial.println(actualAck, HEX);
+
+									if (DEBUG) { Serial.print(F("Wait Span: ")); Serial.println((millis() - m_waitSpan), DEC); } 
+									if (DEBUG) { Serial.print(F("Closing: ")); Serial.println(m_closing ? "sim" : "nao"); } 
+
+									if (m_closing && actualAck < m_lastAckSent && (millis() - m_waitSpan) > 1000)
+									{
+										if (DEBUGLT) Serial.println(F("lost packet, reseting ethernet hardware!"));
+
+										// if we got here, means ENC28J60 lost packets and TX not sending anymore (Renato Aloi AUG 2015)
+										// Reset Hardware
+										open(m_serverPort);
+
+										// Reseting vars
+										m_rxPointer = 0;
+										m_txPointer = 0; 
+										m_seqNum.l = 0;
+										m_ackNum.l = 0;
+										m_recvPayload = 0;
+										m_sendPayload = 0;
+										m_sizePayload = 0;
+										m_sessionPort = 0;
+										m_buffering = false;
+										m_established = false;
+										m_responding = false;
+										m_closing = false;
+
+									}
+									
+								}
+							}
+
+						}
+
+						else if (pshAckFlag)
+						{
+							if (isSession() && m_sessionPort == tmpPort)
+							{
+								// session exists and is buffering!
+								if (m_buffering)
+								{
+									if (DEBUG) Serial.println(F("buffering!"));
+
+									// REV 3
+									// DMA Zero-Copy to socket space
+
+									// Getting http data payload
+									m_recvPayload = ((((uint)m_tcpData[IP_TOTLEN_H_P]) << 8) & 0xFF00)
+										| (((uint)m_tcpData[IP_TOTLEN_L_P]) & 0x00FF);
+
+									// Getting source IP and MAC
+									for (unsigned i = 0; i < MAC_SIZE; i++)
+										m_clientMacAddr[i] = m_tcpData[ETH_SRC_MAC_P + i];
+									for (unsigned i = 0; i < IP_SIZE; i++)
+										m_clientIpAddr[i] = m_tcpData[IP_SRC_P + i];
+
+
+									if (DEBUG) { Serial.print(F("m_recvPayload: ")); Serial.println(m_recvPayload, DEC); }
+
+									MACDisableRecv();
+									//waitForDMACopy();
+									delay(1);
+
+									// Copy packet from
+									// ENC28J60's RX buffer to socket RX buffer
+									// TODO: Manage sockets: 0 - socket 1; 1 - socket 2
+									DMACopy(RX, SOCKET_RX_START(0), m_recvPayload + ETH_BUFF_SIZE);
+									waitForDMACopy();
+									
+
+									delay(1);
+									MACEnableRecv();
+
+									// Subtracting packet size from total = data size
+									// It is -40, not -54; because source is IP datagram
+									m_recvPayload -= (IP_HEADER_LEN_V + TCP_HEADER_LEN_PLAIN_V);
+
+									// Now we can discard packet freeing space from
+									// RXTX FIFO, because we already moved the data
+									// to Socket FIFO, far away from being overwriten
+									if (DEBUG) Serial.println(F("buffering done!"));
+
+									
+
+									// respond ack for push at once
+									// to avoid server become anoying
+									returnPush();
+
+									// now we are ready
+									m_buffering = false;
+									m_responding = true;
+
+									m_waitSpan = millis();
+								}
+							}
+						}
+
+						
+
+						else if (synFlag)
+						{
+							if (DEBUG) Serial.print(F("Got SYN!"));
+
+							if (!isSession())
+							{
+								if (DEBUG) Serial.println(F("new session!"));
+								// new session
+								m_sessionPort = (uint)(((uint)(m_tcpData[TCP_SRC_PORT_H_P]<<8) & 0xFF00) | (m_tcpData[TCP_SRC_PORT_L_P] & 0x00FF));
+								m_seqNum.b[0] = m_tcpData[TCP_SEQ_P+3];
+								m_seqNum.b[1] = m_tcpData[TCP_SEQ_P+2];
+								m_seqNum.b[2] = m_tcpData[TCP_SEQ_P+1];
+								m_seqNum.b[3] = m_tcpData[TCP_SEQ_P+0];
+								m_ackNum.b[0] = m_tcpData[TCP_ACK_P+3];
+								m_ackNum.b[1] = m_tcpData[TCP_ACK_P+2];
+								m_ackNum.b[2] = m_tcpData[TCP_ACK_P+1];
+								m_ackNum.b[3] = m_tcpData[TCP_ACK_P+0];
+
+								if (DEBUG)
+								{
+									Serial.println();
+									Serial.print(F("m_sessionPort: "));
+									Serial.println(m_sessionPort, DEC);
+									Serial.print(F("m_seqNum: "));
+									Serial.println(m_seqNum.l, DEC);
+									Serial.print(F("m_ackNum: "));
+									Serial.println(m_ackNum.l, DEC);
+									Serial.println();
+								}
+
+								returnSyn();
+#if (!ESP8266) && (!ENERGIA)
+								if (DEBUGLT) { Serial.print(F("RAM avail: ")); Serial.println(freeRam()); }
+#endif
+							}
+							else
+							{
+								// session running already
+								//sendFinToPorOutOfSession();
+								if (DEBUG) { 
+									Serial.println(F("Session already exists!")); 
+									Serial.print(F("Session port: ")); 
+									Serial.println(m_sessionPort, DEC); 
+									Serial.print(F("Incomming port: ")); 
+									Serial.println((uint)(((uint)(m_tcpData[TCP_SRC_PORT_H_P]<<8) & 0xFF00) | (m_tcpData[TCP_SRC_PORT_L_P] & 0x00FF)), DEC); 
+									Serial.print(F("IsClosing: ")); 
+									Serial.println(m_closing ? "sim" : "nao"); 
+
+									if ( (uint)(((uint)(m_tcpData[TCP_SRC_PORT_H_P]<<8) & 0xFF00) | (m_tcpData[TCP_SRC_PORT_L_P] & 0x00FF)) > m_sessionPort) // && m_closing)
+									{
+										returnClose();
+										m_closing = true;
+									}
+								
+								}
+							}
+							
+						}
+
+
 					}
 				}
 			}
@@ -398,7 +468,7 @@ void TcpStack::returnSyn(void)
 
 	// 0xC0C756EF
 	//_bufferWr[TCP_SEQ_P]            = _bufferRd[TCP_ACK_P]
-	if (m_ackNum.l == 0L) m_ackNum.l = 0xC0C756EF;
+	if (m_ackNum.l == 0L) m_ackNum.l = millis(); //0xC0C756EF;
 	m_sendData[TCP_SEQ_P+0] = m_ackNum.b[3];
 	m_sendData[TCP_SEQ_P+1] = m_ackNum.b[2];
 	m_sendData[TCP_SEQ_P+2] = m_ackNum.b[1];
@@ -522,6 +592,9 @@ void TcpStack::returnPush(void)
 	m_sendData[TCP_ACK_P+2] = m_seqNum.b[1];
 	m_sendData[TCP_ACK_P+3] = m_seqNum.b[0];
 
+	m_firstAckSent = m_ackNum.l;
+	m_firstSeqSent = m_seqNum.l;
+
 	if (DEBUG) Serial.print(F("m_ackNum: "));
 	if (DEBUG) Serial.println(m_ackNum.l, DEC);
 	if (DEBUG) Serial.print(F("m_seqNum: "));
@@ -548,6 +621,10 @@ void TcpStack::returnPush(void)
 	MACWriteTXBuffer(m_sendData, ETH_HEADER_LEN_V
 		           + IP_HEADER_LEN_V + TCP_HEADER_LEN_PLAIN_V);
 	MACSendTx();
+	m_lastAckSent = m_ackNum.l;
+
+	waitForACKResponse();
+
 	if (DEBUG) Serial.println();
 }
 
@@ -649,10 +726,14 @@ void TcpStack::returnHttp(void) //(uchar* _buf, uint _size)
 	m_sendData[TCP_WINDOW_H_P] = 0x72;
 	m_sendData[TCP_WINDOW_L_P] = 0x10;
 
+	MACDisableRecv();
+	delay(1);
+	//waitForDMACopy();
 	// Filling data before checksum!
 	DMACopy(TX, TXSTART_INIT + ETH_HEADER_LEN_V + IP_HEADER_LEN_V + TCP_HEADER_LEN_PLAIN_V + 1, m_sizePayload);
 	waitForDMACopy();
 	//
+	delay(1);
 
 	ck = checksumDMA(8 + TCP_HEADER_LEN_PLAIN_V + m_sizePayload);
 	m_sendData[TCP_CHECKSUM_H_P] = ((ck>>8)&0xFF);
@@ -662,6 +743,11 @@ void TcpStack::returnHttp(void) //(uchar* _buf, uint _size)
 	// must re-issue header len
 	// I think checksum is overriding next byte
 	m_sendData[TCP_HEADER_LEN_P] = 0x50;
+
+
+	delay(1);
+	MACEnableRecv();
+	delay(1);
 
 	
 	/*if (DEBUG) Serial.println();
@@ -679,7 +765,13 @@ void TcpStack::returnHttp(void) //(uchar* _buf, uint _size)
 	// We must keep up with SEQ/ACK
 	m_sendPayload = m_sizePayload;
 
+	
+
 	MACSendTx();
+	m_lastAckSent = m_ackNum.l;
+
+	waitForACKResponse();
+
 	if (DEBUG) Serial.println();
 }
 
@@ -832,6 +924,12 @@ void TcpStack::returnClose(void)
 	MACWriteTXBuffer(m_sendData, ETH_HEADER_LEN_V
 		           + IP_HEADER_LEN_V + TCP_HEADER_LEN_PLAIN_V);
 	MACSendTx();
+
+	m_lastAckSent = m_ackNum.l;
+	if (DEBUG) {
+		Serial.print(F("m_lastAckSent: 0x"));
+		Serial.println(m_lastAckSent, HEX);
+	}
 }
 
 void TcpStack::returnFin(void)
@@ -936,6 +1034,9 @@ void TcpStack::returnFin(void)
 	MACWriteTXBuffer(m_sendData, ETH_HEADER_LEN_V
 		           + IP_HEADER_LEN_V + TCP_HEADER_LEN_PLAIN_V);
 	MACSendTx();
+
+
+
 	if (DEBUG) Serial.println();
 }
 
@@ -948,6 +1049,55 @@ void TcpStack::waitForDMACopy(void)
 	while(!IsDMACopyDone()) if (timerSendTrigger + 1000 < millis()) break;
 }
 
+
+//MACGetPacketCount() > 0
+
+// Wait for ACK Packet Arrives
+//
+void TcpStack::waitForACKResponse(void)
+{
+	uchar isDiscarded = false;
+	unsigned long actualAck = 0L;
+	ulong timerSendTrigger = millis();
+	do
+	{
+		if (timerSendTrigger + 100 < millis()) break;
+
+		if (MACGetPacketCount() > 0)
+		{
+
+			// Getting Packet from enc28 hardware's buffer
+			MACReadRXBuffer(m_tcpData, DATA_SIZE);
+			actualAck = ((ulong)m_tcpData[TCP_ACK_P+0] << 24) 
+			    		| ((ulong)m_tcpData[TCP_ACK_P+1] << 16)
+			    		| ((ulong)m_tcpData[TCP_ACK_P+2] << 8) 
+			    		| ((ulong)m_tcpData[TCP_ACK_P+3]);
+
+
+			if (actualAck <= m_lastAckSent) 
+			{
+				//
+				MACDiscardRx();
+				isDiscarded = true;
+				break;
+			}
+			
+
+
+		}
+	} while(!(MACGetPacketCount() > 0));
+
+	if (DEBUG) { Serial.print(F("TimeSpan: ")); Serial.println(millis() - timerSendTrigger, DEC); }
+	
+	if (DEBUG) Serial.print(F("Actual ACK: 0x"));  
+	if (DEBUG) Serial.println(actualAck, HEX);
+	if (DEBUG) Serial.print(F("Last sent ACK: 0x"));  
+	if (DEBUG) Serial.println(m_lastAckSent, HEX);
+
+	if (DEBUG && isDiscarded) Serial.println(F("Descartando pacote de resposta!"));
+	if (DEBUG && !isDiscarded) Serial.println(F("Nenhum pacote! descartado..."));
+
+}
 
 // PUBLIC
 
@@ -981,6 +1131,7 @@ void TcpStack::open(uint serverPort)
 /*	SPCR = (1<<SPE)|(1<<MSTR);
 	SPSR |= (1<<SPI2X);*/
 	SPI.begin();
+
 //--- made by SKA ---
 
 	if (DEBUGLT) { Serial.println(F("Configuring Ethernet Layer...")); }
@@ -1046,13 +1197,10 @@ void TcpStack::write(char c)
 	uchar localBuf[] = { 0, 0 };
 	localBuf[0] = c;
 
-	if (m_sizePayload < DATA_SIZE_HARDWARE)
-  	{
-		// Only send if sizePayload reaches max
-		m_sizePayload++;
-	}
-	else
+	m_sizePayload++;
+	if (!(m_sizePayload < DATA_SIZE_HARDWARE - 1))
 	{
+		// Only send if sizePayload reaches max
 		// reached max packet size, sending
 		send();
 	}

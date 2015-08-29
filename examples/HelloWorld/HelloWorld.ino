@@ -12,7 +12,9 @@
 
 #include <SPI.h>
 #include <EtherEncLib.h>
+#if (!ESP8266) && (!ENERGIA)
 #include <avr/pgmspace.h>
+#endif
 
 const PROGMEM char resp200Txt[] = {"HTTP/1.0 200 OK\n\rContent-Type: text/html\n\rPragma: no-cache\n\r\n\r"};
 
@@ -25,7 +27,11 @@ void setup()
 {
     Serial.begin(115200);
 
+#if (ESP8266)
+    pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#else
     pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
+#endif
     
     //
     // Starting the lib
