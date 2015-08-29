@@ -8,6 +8,9 @@ EtherEncLib
 - New code by Renato Aloi, based on Howard Schlundler AN833's TCPStack work, from Microchip plataform. This new version is taking total advantage over ENC28J60's internal 8K Dual RAM!
 - NO MORE string buffers consuming Arduino RAM!
 
+August 2015
+- Add ESP8266 support
+
 June 2015 - Branch newMods
 - Implemented UDP Stack for Homeseer integration (already working at Normal Mode)
 
