@@ -18,7 +18,7 @@
 const PROGMEM char resp200Txt[] = {"HTTP/1.0 200 OK\n\rContent-Type: text/html\n\rPragma: no-cache\n\r\n\r"};
 
 #if (ENERGIA)
-const int RelayPin = 2;
+const int RelayPin = RED_LED;
 #elif (ESP8266)
 int RelayPin = 16;
 #else
