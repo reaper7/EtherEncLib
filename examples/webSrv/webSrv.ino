@@ -20,11 +20,13 @@ const PROGMEM char resp200Txt[] = {"HTTP/1.0 200 OK\n\rContent-Type: text/html\n
 void setup() 
 {
 #if (ESP8266)
+    Serial.begin(115200);
     pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #else
+    Serial.begin(9600);
     pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #endif
-  Serial.begin(115200);
+
   eElib.begin(ipaddr,macaddr);
   Serial.println(F("------ program start -----------"));
   //Serial.println(F("NO SDCARD version")); // by Renato Aloi

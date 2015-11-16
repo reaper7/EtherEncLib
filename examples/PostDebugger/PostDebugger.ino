@@ -20,11 +20,11 @@ EtherEncLib lib(80);
 
 void setup()
 {
-    Serial.begin(115200);
-    
 #if (ESP8266)
+    Serial.begin(115200);
     pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #else
+    Serial.begin(9600);
     pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #endif
 

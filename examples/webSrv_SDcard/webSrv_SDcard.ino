@@ -30,11 +30,12 @@ void setup() {
 byte i;
   for ( i=0 ; i<BUFF_SIZE ; i++ ) htmlBuff[i] = 0x00;
 #if (ESP8266)
+    Serial.begin(115200);
     pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #else
+    Serial.begin(9600);
     pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #endif
-  Serial.begin(115200);
   eElib.begin(ipaddr,macaddr);
   Serial.println("------ program start -----------");
   if ( SD.begin(4) )

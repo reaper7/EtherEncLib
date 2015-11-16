@@ -37,11 +37,11 @@ static unsigned char macaddr[] = { 0x54, 0x55, 0x58, 0x10, 0x00, 0x25 };
 
 void setup()
 {
-    Serial.begin(115200);
-    
 #if (ESP8266)
+    Serial.begin(115200);
     pinMode(5,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #else
+    Serial.begin(9600);
     pinMode(10,OUTPUT);	//--- ? -- SS pin must be output # by Renato Aloi
 #endif
     
