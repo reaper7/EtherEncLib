@@ -33,7 +33,9 @@
 
 #include <Arduino.h>
 #include "EtherEncLibUdp.h"
-#if (!ESP8266)
+#if (ESP8266)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
 #endif
 #include <stdlib.h>

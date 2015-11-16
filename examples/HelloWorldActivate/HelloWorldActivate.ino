@@ -11,7 +11,9 @@
 
 #include <SPI.h>
 #include <EtherEncLib.h>
-#if (!ESP8266) && (!ENERGIA)
+#if (ESP8266)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
 #endif
 
