@@ -63,7 +63,7 @@
 
 #include <Arduino.h>
 #include "EtherEncLib.h"
-#if (!ESP8266) && (!ENERGIA)
+#if (!ESP8266)
 #include <avr/pgmspace.h>
 #endif
 
