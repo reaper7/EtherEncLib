@@ -421,7 +421,7 @@
 
 #if (ENERGIA)
 
-  #define ENC28J60_CONTROL_CS                     10
+  #define ENC28J60_CONTROL_CS                     13
   //#define SPI_MOSI				13
   //#define SPI_MISO				12
   //#define SPI_SCK					14
