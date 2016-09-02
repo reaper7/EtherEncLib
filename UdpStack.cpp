@@ -116,7 +116,7 @@ void UdpStack::handleStack(void)
 						// Copy packet from
 						// ENC28J60's RX buffer to socket RX buffer
 						// TODO: Manage sockets: 0 - socket 1; 1 - socket 2
-						DMACopy(RX, SOCKET_RX_START(0), m_recvPayload + ETH_BUFF_SIZE);
+						DMACopy(RXENC, SOCKET_RX_START(0), m_recvPayload + ETH_BUFF_SIZE);
 						waitForDMACopy();
 
 						// Subtracting packet size from total = data size
@@ -315,7 +315,7 @@ void UdpStack::returnUdp(void)
 	if (DEBUGUDP)  { Serial.print(F("size: ")); Serial.println(m_sizePayload); }
 
 	// Filling data before checksum!
-	DMACopy(TX, TXSTART_INIT + ETH_HEADER_LEN_V + IP_HEADER_LEN_V + UDP_HEADER_LEN + 1, m_sizePayload);
+	DMACopy(TXENC, TXSTART_INIT + ETH_HEADER_LEN_V + IP_HEADER_LEN_V + UDP_HEADER_LEN + 1, m_sizePayload);
 	waitForDMACopy();
 	//
 

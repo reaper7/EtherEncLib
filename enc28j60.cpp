@@ -807,7 +807,7 @@ void DMACopy(FLOW flow, unsigned int destAddr, unsigned int len)
     enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_DMAST);
     
     // Defining source address by read or write pointer
-    if (flow == RX)
+    if (flow == RXENC)
     {
         if ((CurrentPacketLocation.Val + RXD_STATUS_VECTOR_SIZE) <= RXSTOP_INIT)
         {
@@ -819,7 +819,7 @@ void DMACopy(FLOW flow, unsigned int destAddr, unsigned int len)
             sourceAddr = rest - 1;
         }
     }
-    else if (flow == TX)
+    else if (flow == TXENC)
     {
 	sourceAddr = SOCKET_TX_START(0); // TX Copy From Bank To FIFO
     }
@@ -831,7 +831,7 @@ void DMACopy(FLOW flow, unsigned int destAddr, unsigned int len)
     // Source Stop Address
     // Need compensate circular buffer WHEN RX COPY !!!
     unsigned int floatingEnd = (sourceAddr + len);
-    if (flow == RX)
+    if (flow == RXENC)
     {	
 	if (floatingEnd >= RXSTOP_INIT)
 	{

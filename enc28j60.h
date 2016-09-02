@@ -30,7 +30,7 @@
 #define high(a)         ((a>>8)&0xFF)
 
 //typedef enum _BOOL { FALSE = 0, TRUE } BOOL;
-typedef enum _FLOW { RX = 0, TX } FLOW;
+typedef enum _FLOW { RXENC = 0, TXENC } FLOW;
 
 typedef union
 {
